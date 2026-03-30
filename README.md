@@ -7,7 +7,7 @@ Typescript package to support adding a IIIF Manifest 3D viewer, implemented usin
 * @kshell/manifesto-prezi4 Package that wraps the Javascript object created by JSON decoding a IIIF Manifest file. 
     * Github repository: [vincentmarchetti/manifesto-prezi4](https://github.com/vincentmarchetti/manifesto-prezi4)
     
-* @kshell/transforms Package that extends the classes defined in @kshell/manifesto-prezi4 to deliver X3D specific geometric values.
+* @@kshell/iiif-x3d-transforms Package that extends the classes defined in @kshell/manifesto-prezi4 to deliver X3D specific geometric values.
     * Github repository: [vincentmarchetti/iiif-x3d-transforms](https://github.com/vincentmarchetti/iiif-x3d-transforms)
     
 * x_ite : Code for the X_ITE X3D browser. Only Typescript type information is imported into the @kshell/manifest-viewer code at transpile time.

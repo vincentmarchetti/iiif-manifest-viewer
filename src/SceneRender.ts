@@ -5,7 +5,7 @@ import {Transform,
         Rotation, 
         Translation, 
         Placement, 
-        relativeRotation } from "@kshell/transforms";
+        relativeRotation } from "@kshell/iiif-x3d-transforms";
 
 import type X3D from "x_ite";
 
