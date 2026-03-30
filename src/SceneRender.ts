@@ -7,7 +7,6 @@ import {Transform,
         Placement, 
         relativeRotation } from "@kshell/transforms";
 
-import {Quaternion, Vector3, MathUtils} from "threejs-math";
 import type X3D from "x_ite";
 
 type WrappedInline = X3D.ConcreteNodeTypes["Transform"] | X3D.ConcreteNodeTypes["Inline"];
@@ -345,10 +344,9 @@ export class SceneRender {
         
         const cameraNode = (() => {
             if (camera.isPerspectiveCamera){
-                let retVal = this.createNode("Viewpoint");
-                let fov = camera.FieldOfView ?? 45.0;
-                let fov_rad = MathUtils.degToRad( fov );
-                retVal.fieldOfView = new this.manifest_render.x3dLib.SFFloat(fov_rad);
+                const retVal = this.createNode("Viewpoint");
+                const fov = (camera.FieldOfView ?? 45.0) * (Math.PI/180.0); // in radians
+                retVal.fieldOfView = new this.manifest_render.x3dLib.SFFloat(fov);
                 return retVal;
             }
             throw new Error(`SceneRender.buildCameraNode unsupported camera`);       
