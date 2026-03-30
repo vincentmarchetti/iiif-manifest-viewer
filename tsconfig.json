@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "declaration": true,
+        "forceConsistentCasingInFileNames": true,
+        "lib": [ "es2022", "dom"],
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "noImplicitAny": false,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "outDir": "dist",
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "esModuleInterop": true,
+        "strictNullChecks": true,
+        "strictPropertyInitialization" : true,
+        "target": "es6"
+    },
+    "include" : ["src/index.ts"]
+}
