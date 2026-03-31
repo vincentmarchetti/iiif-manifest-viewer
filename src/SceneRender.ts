@@ -270,10 +270,13 @@ export class SceneRender {
                 
         const outerNode = placements.reduce( (accum: WrappedInline, placement: Placement):WrappedInline => {
                 const newNode = this.createTransformNode(placement);
-                newNode.children.push(accum);
-                return newNode;
+                if (newNode != null){
+                    newNode.children.push(accum);
+                    return newNode;
+                }
+                return accum;
             }, inline);        
-        
+        console.info(`model fragment ${outerNode.toXMLString()}`);
         container.push(outerNode);
         return;                       
     }
@@ -362,8 +365,24 @@ export class SceneRender {
         return;
     }
     
-    createTransformNode(placement : Placement):X3D.ConcreteNodeTypes["Transform"]{
+    createTransformNode(placement : Placement):X3D.ConcreteNodeTypes["Transform"] | null {
+        let nullFlag : boolean = true;
         const retVal:X3D.ConcreteNodeTypes["Transform"] = this.createNode("Transform");
+        if (!placement.rotation.isIdentity(1.0e-6)){
+            nullFlag = false;
+            retVal.rotation = new this.manifest_render.x3dLib.SFRotation(...placement.rotation.x3dArgs);
+        }
+        
+        if (!placement.translation.isIdentity(1.0e-6)){
+            nullFlag = false;
+            retVal.translation = new this.manifest_render.x3dLib.SFVec3f(...placement.translation.x3dArgs);
+        }
+        
+        if (!placement.scaling.isIdentity(1.0e-6)){
+            nullFlag = false;
+            retVal.scale = new this.manifest_render.x3dLib.SFVec3f(...placement.scaling.x3dArgs);
+        }
+        if (nullFlag) return null;
         return retVal;
     }
 }
