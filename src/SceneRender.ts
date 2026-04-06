@@ -5,7 +5,11 @@ import {Transform,
         Rotation, 
         Translation, 
         Placement, 
-        relativeRotation } from "@kshell/iiif-x3d-transforms";
+        relativeRotation,
+        directionFromOrientation,
+        directionFromDisplacement } from "@kshell/iiif-x3d-transforms";
+        
+import {Vector3} from "threejs-math";
 
 import type X3D from "x_ite";
 
@@ -233,7 +237,10 @@ export class SceneRender {
             if ((bodySource as any).isCamera )
                 return this.addCamera(container, anno);
                 
-            console.warn(`unsupported body type`);
+            if ((bodySource as any).isSpotLight )
+                return this.addSpotLight(container, anno);
+                
+            console.warn(`unsupported body type ${body.ResourceType}`);
             return;
         } catch(error) {
             const msg = `SceneRender.addAnnotation : failed with ${error}`;
@@ -276,7 +283,7 @@ export class SceneRender {
                 }
                 return accum;
             }, inline);        
-        console.info(`model fragment ${outerNode.toXMLString()}`);
+        console.info(`model fragment \n${outerNode.toXMLString()}`);
         container.push(outerNode);
         return;                       
     }
@@ -365,6 +372,87 @@ export class SceneRender {
         return;
     }
     
+    
+    private addSpotLight(  container, anno : manifesto.Annotation):void{
+
+        // precontract check
+        const spotlight:manifesto.SpotLight = (():manifesto.SpotLight => {
+            const test:any = thisOrSource( anno.Body );
+            if (test == null || ! test.isSpotLight )
+                throw new Error(`SceneRender.addSpotLight: precontract violation: not a spotlight`);
+            return test as manifesto.SpotLight;
+        })();
+        
+        // lookAt vs SpecificResource check
+        if ((anno.Target as any).isSpecificResource && (spotlight.LookAt != null))
+        {
+            const msg:string = `SceneRender.addSpotLight | case of lookAt wrapped in SpecificResource not implemented`;
+            throw new Error()
+        }
+                
+        const light_placement:Placement = ( () => {
+            const placements =  transformsToPlacements(
+                [   ...TransformsForBody(anno.Body),
+                    TranslationForTarget(anno.Target) ]);
+            if (placements.length > 1){
+                console.warn(`invalid transforms for Camera body`);
+            }
+            return placements[0];
+        })();                   
+        
+        
+        const lightLocation : Translation  =   light_placement.translation;
+            
+        const lightDirection  = ( (lookAt):Translation  => {
+            if (lookAt == null){
+                return directionFromOrientation(light_placement.rotation);
+            }
+            if ((lookAt as any).isPointSelector){
+                const lookAtLocation:Translation = 
+                    Transform.from_point_selector( lookAt as manifesto.PointSelector);                
+                const dir = directionFromDisplacement(lightLocation,lookAtLocation);
+                if (dir == null){
+                    const msg = `SceneRender.addSpotLight | light and lookAt at same location`;
+                    throw new Error(msg);
+                }
+                return dir as Translation;
+            }
+            const msg = `SceneRender.addSpotLight | unsupported lookAt resource`;
+            throw new Error(msg);
+        })();
+        
+        
+
+        const lightNode =  this.createNode("SpotLight");
+
+        const lightColor:X3DColor = X3DColor.from_manifesto_color( spotlight.Color);
+        lightNode.color =   new this.manifest_render.x3dLib.SFColor(...lightColor.x3dArgs);  
+        
+        const lightIntensity:number = (():number => {
+            const valueInstance = spotlight.Intensity;
+            if (valueInstance == null){
+                const msg=`SceneRender.addSpotLight | intensity not spefied, default to 1.0`;
+                console.warn(msg);
+                return 1.0;
+            }
+            return valueInstance.Value;
+        })();   
+        lightNode.intensity = new this.manifest_render.x3dLib.SFFloat(lightIntensity);
+        
+        const angle_degrees = spotlight.Angle ?? 15.0;
+        const angle = angle_degrees * Math.PI/180.0;
+        lightNode.beamWidth   = new this.manifest_render.x3dLib.SFFloat(angle);
+        lightNode.cutOffAngle = new this.manifest_render.x3dLib.SFFloat(angle);
+        
+        lightNode.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
+        
+        lightNode.location = new this.manifest_render.x3dLib.SFVec3f(...lightLocation.x3dArgs);
+        
+        console.info(`light fragment \n${lightNode.toXMLString()}`);
+        container.push( lightNode );
+        return;
+    }
+    
     createTransformNode(placement : Placement):X3D.ConcreteNodeTypes["Transform"] | null {
         let nullFlag : boolean = true;
         const retVal:X3D.ConcreteNodeTypes["Transform"] = this.createNode("Transform");
@@ -385,4 +473,31 @@ export class SceneRender {
         if (nullFlag) return null;
         return retVal;
     }
+}
+
+
+/*
+class to wrap around a manifesto.Color instance to provide the interface to 
+X3D Color node
+*/
+class X3DColor {
+    readonly values:[number,number,number];
+    
+    constructor( _values: [number,number,number]){
+        this.values = _values;
+    }
+    
+    get x3dArgs():[number,number,number]{
+        return this.values;
+    }
+    
+    static from_manifesto_color( c : { red:number, green:number, blue:number } ){
+        const conv = [c.red,c.green,c.blue].map( (v:number):number => 
+        {
+            return Math.min(1.0, Math.max(0.0, (v-0.5)/254.0));
+        });
+        return new X3DColor(conv as [number,number,number]);
+    }
+    
+    static readonly WHITE = new X3DColor([1.0,1.0,1.0]);
 }
