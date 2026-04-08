@@ -38,7 +38,7 @@ It will support the mechanism by which activating annotations are triggered
 by HTML events.
 */
 export interface SceneHooks {
-    NavigationInfo : any
+    isHouseLightsOn? : boolean;  
 };
 
 type AxesValues = manifesto.AxesValues; // rem: an array of 4 numbers
@@ -109,9 +109,7 @@ export class SceneRender {
     // a default color for background in X3D color convention, 0 is black, 1.0 is white 
     private readonly defaultBackground : [number, number, number]= [0.925,0.925,0.925];    
     
-    private hooks: SceneHooks = {
-        NavigationInfo: null
-    };
+    
     
     public constructor( scene : manifesto.Scene, manifest_render:IManifestRender){        
         this.manifest_render = manifest_render;
@@ -122,7 +120,7 @@ export class SceneRender {
         }
     };
     
-    private scene_x3d: any;
+    private scene_x3d?: X3D.X3DScene;
     
     private createNode( tag:string ) {
         if (this.scene_x3d == null){
@@ -131,6 +129,21 @@ export class SceneRender {
         console.debug(`SceneRender.createNode ${tag}`);
         return this.scene_x3d.createNode(tag);
     }
+    
+    private navigationInfo?      : X3D.ConcreteNodeTypes["NavigationInfo"];
+    private defaultLightsSwitch? : X3D.ConcreteNodeTypes["Switch"];
+    
+    get isHouseLightsOn():boolean | undefined {
+        if ( this.navigationInfo === undefined) return undefined;
+        return this.navigationInfo.headlight;
+    }
+    
+    set isHouseLightsOn(value:boolean){
+        if (this.navigationInfo != null)
+            this.navigationInfo.headlight = value;
+    }
+    
+    
     
     /*
     Developer note: 13 Jan 2026 Functionally this should be put in the
@@ -153,25 +166,28 @@ export class SceneRender {
         const profile:X3D.ProfileInfo = this.manifest_render.browser.getProfile("Full");
         this.scene_x3d =  await this.manifest_render.browser.createScene(profile);
         
-        this.addNavigationInfo(  this.scene_x3d.rootNodes );
-        this.addDefaultLighting( this.scene_x3d.rootNodes );
-        this.addBackground(      this.scene_x3d.rootNodes );
-        
-        this.scene_properties.Items.forEach( (page:manifesto.AnnotationPage) => {
-            this.addAnnotationPage(this.scene_x3d.rootNodes, page);
-        });
-        
-        await this.manifest_render.browser.replaceWorld(this.scene_x3d); 
+        if (this.scene_x3d != null){
+            this.addNavigationInfo(  this.scene_x3d.rootNodes );
+            this.addDefaultLighting( this.scene_x3d.rootNodes );
+            this.addBackground(      this.scene_x3d.rootNodes );
+            
+            this.scene_properties.Items.forEach( (page:manifesto.AnnotationPage) => {
+                if (this.scene_x3d != null)
+                    this.addAnnotationPage(this.scene_x3d.rootNodes, page);
+            });
+            
+            await this.manifest_render.browser.replaceWorld(this.scene_x3d); 
+        }
         //await render_stub_content(this.browser);
         
         
-        return this.hooks;
+        return this as SceneHooks
     }
     
     private addNavigationInfo(container):void {
-        const navInfo = this.createNode("NavigationInfo");
-        navInfo.headlight = new this.manifest_render.x3dLib.SFBool(true);
-        this.hooks.NavigationInfo = navInfo;
+        const navInfo = this.createNode("NavigationInfo") as X3D.ConcreteNodeTypes["NavigationInfo"]
+        navInfo.headlight = true;
+        this.navigationInfo = navInfo;
         container.push(navInfo);
     }
     
@@ -185,7 +201,7 @@ export class SceneRender {
                     .map( (v):number => Math.min(Math.round(v/0.255)*0.001, 1.0))) as ColorType;
         })();
                                 
-        const backGround = this.createNode("Background");
+        const backGround = this.createNode("Background") as X3D.ConcreteNodeTypes["Background"];
         backGround.skyColor = new this.manifest_render.x3dLib.MFColor(
             new this.manifest_render.x3dLib.SFColor(...rgb)
         );
@@ -193,7 +209,7 @@ export class SceneRender {
     }
     
     private addAnnotationPage(container, page: manifesto.AnnotationPage):void {
-        const group  = this.createNode("Group");
+        const group  = this.createNode("Group") as X3D.ConcreteNodeTypes["Group"];
         page.Items.forEach( (anno:manifesto.Annotation):void => {
             this.addAnnotation( group.children , anno );
         });
@@ -206,11 +222,11 @@ export class SceneRender {
                 [-0.5, -0.81649658,  0.28867513],
                 [+0.5, -0.81649658,  0.28867513]];
         directionData.forEach( (vec:AxesValues) => {
-            const light = this.createNode("DirectionalLight");
+            const light = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
             light.direction = new this.manifest_render.x3dLib.SFVec3f(...vec);
-            light.global =    new this.manifest_render.x3dLib.SFBool(true);
-            light.intensity = new this.manifest_render.x3dLib.SFFloat(1.0);
-            light.ambientIntensity = new this.manifest_render.x3dLib.SFFloat(0.5);
+            light.global =    true;
+            light.intensity = 1.0 ;
+            light.ambientIntensity = 0.5;
             container.push(light);        
         });
     }
@@ -267,7 +283,7 @@ export class SceneRender {
              
         console.debug(`adding model ${model.id}`);
         
-        const inline = this.createNode("Inline");
+        const inline = this.createNode("Inline") as X3D.InlineProxy;
         inline.url = new this.manifest_render.x3dLib.MFString( model.id );
             
         const net_transforms =  [   ...TransformsForBody(anno.Body),
@@ -354,9 +370,9 @@ export class SceneRender {
         
         const cameraNode = (() => {
             if (camera.isPerspectiveCamera){
-                const retVal = this.createNode("Viewpoint");
+                const retVal = this.createNode("Viewpoint") as X3D.ViewpointProxy;
                 const fov = (camera.FieldOfView ?? 45.0) * (Math.PI/180.0); // in radians
-                retVal.fieldOfView = new this.manifest_render.x3dLib.SFFloat(fov);
+                retVal.fieldOfView = fov;
                 return retVal;
             }
             throw new Error(`SceneRender.buildCameraNode unsupported camera`);       
@@ -423,7 +439,7 @@ export class SceneRender {
         
         
 
-        const lightNode =  this.createNode("SpotLight");
+        const lightNode =  this.createNode("SpotLight") as X3D.SpotLightProxy;
 
         const lightColor:X3DColor = X3DColor.from_manifesto_color( spotlight.Color);
         lightNode.color =   new this.manifest_render.x3dLib.SFColor(...lightColor.x3dArgs);  
@@ -437,12 +453,12 @@ export class SceneRender {
             }
             return valueInstance.Value;
         })();   
-        lightNode.intensity = new this.manifest_render.x3dLib.SFFloat(lightIntensity);
+        lightNode.intensity = lightIntensity;
         
         const angle_degrees = spotlight.Angle ?? 15.0;
         const angle = angle_degrees * Math.PI/180.0;
-        lightNode.beamWidth   = new this.manifest_render.x3dLib.SFFloat(angle);
-        lightNode.cutOffAngle = new this.manifest_render.x3dLib.SFFloat(angle);
+        lightNode.beamWidth   = angle;
+        lightNode.cutOffAngle = angle;
         
         lightNode.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
         
@@ -455,7 +471,7 @@ export class SceneRender {
     
     createTransformNode(placement : Placement):X3D.ConcreteNodeTypes["Transform"] | null {
         let nullFlag : boolean = true;
-        const retVal:X3D.ConcreteNodeTypes["Transform"] = this.createNode("Transform");
+        const retVal:X3D.ConcreteNodeTypes["Transform"] = this.createNode("Transform") as X3D.TransformProxy;
         if (!placement.rotation.isIdentity(1.0e-6)){
             nullFlag = false;
             retVal.rotation = new this.manifest_render.x3dLib.SFRotation(...placement.rotation.x3dArgs);
