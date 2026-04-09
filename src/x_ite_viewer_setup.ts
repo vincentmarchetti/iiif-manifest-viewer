@@ -11,7 +11,8 @@ import {Manifest3DViewer} from "./Manifest3DViewer.js";
 import type {Manifest}    from "@kshell/manifesto-prezi4";
 
 const XITE_VIEW_CONTAINER="xite-view-container";
-const XITE_SHOWALL_BUTTON="xite-show-all";
+const XITE_SHOWALL="xite-show-all";         // normally an HTML button
+const X_ITE_HOUSELIGHTS  = "headlight-on";  // normally an HTML checkbox input
 
 export function initialize_x_ite_viewer(X3DLib:any){
     document.addEventListener("new_manifest", async (event) => {
@@ -28,11 +29,17 @@ export function initialize_x_ite_viewer(X3DLib:any){
         }     
             
         const viewer = new Manifest3DViewer(X3DLib, container);    
-        const showAllButton = document.getElementById(XITE_SHOWALL_BUTTON);
+        const showAllButton = document.getElementById(XITE_SHOWALL);
         if (showAllButton == null)
-            console.warn(`X-ITE setup: getElementById(\"${XITE_SHOWALL_BUTTON}\") failed`);
+            console.warn(`X-ITE setup: getElementById(\"${XITE_SHOWALL}\") failed`);
         else
             viewer.showAllButton = showAllButton;
+
+        const houseLightsCheckbox = document.getElementById(X_ITE_HOUSELIGHTS);
+        if (houseLightsCheckbox == null)
+            console.warn(`X-ITE setup: getElementById(\"${X_ITE_HOUSELIGHTS}\") failed`);
+        else
+            viewer.houseLightsCheckbox = houseLightsCheckbox as HTMLInputElement;
             
         const manifest:unknown = (event as any).detail.manifest;
         // sanity check

@@ -25,7 +25,7 @@ export class Manifest3DViewer {
         }
     };
 
-    
+    public houseLightsCheckbox?:HTMLInputElement;
     
     constructor( x3dLib: X3D, container : HTMLElement ){
         this.x3dLib = x3dLib;
@@ -80,6 +80,21 @@ export class Manifest3DViewer {
 
         const scene_handle = new SceneRender(scene, props);
         const hooks:SceneHooks =  await scene_handle.render();
+        
+        if (this.houseLightsCheckbox == null){
+            console.warn(`scene rendered but no houseLightsCheckbox available`);
+        }
+        else{
+            console.info(`setting houseLightsCheckbox.checked based on ${hooks.isHouseLightsOn}`);
+            this.houseLightsCheckbox.checked = ( hooks.isHouseLightsOn === true );
+            const houselights : HTMLInputElement = this.houseLightsCheckbox;
+            houselights.addEventListener("click", (event) => {
+                
+                    console.info(`houseLightsCheckbox: setting to ${houselights.checked}`)
+                    hooks.isHouseLightsOn = houselights.checked;
+               
+            });
+        }
     };
 }
 

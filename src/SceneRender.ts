@@ -141,6 +141,8 @@ export class SceneRender {
     set isHouseLightsOn(value:boolean){
         if (this.navigationInfo != null)
             this.navigationInfo.headlight = value;
+        if (this.defaultLightsSwitch != null)
+            this.defaultLightsSwitch.whichChoice = (value)?0:-1;
     }
     
     
@@ -217,6 +219,8 @@ export class SceneRender {
     }
     
     private addDefaultLighting(container):void {
+        const switchNode = this.createNode("Switch") as X3D.SwitchProxy;
+        const groupNode  = this.createNode("Group")  as X3D.GroupProxy;
         const directionData : AxesValues[] 
             =   [ [0.0 , -0.81649658, -0.57735027] ,
                 [-0.5, -0.81649658,  0.28867513],
@@ -227,8 +231,12 @@ export class SceneRender {
             light.global =    true;
             light.intensity = 1.0 ;
             light.ambientIntensity = 0.5;
-            container.push(light);        
+            groupNode.children.push(light);        
         });
+        switchNode.children.push(groupNode);
+        switchNode.whichChoice = 0;
+        this.defaultLightsSwitch = switchNode;
+        container.push(switchNode);
     }
     
     private addAnnotation(container, anno:manifesto.Annotation):void {
