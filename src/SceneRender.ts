@@ -464,7 +464,7 @@ export class SceneRender {
         lightNode.intensity = lightIntensity;
         
         const angle_degrees = spotlight.Angle ?? 15.0;
-        const angle = angle_degrees * Math.PI/180.0;
+        const angle = Math.max(0.0, Math.min( Math.PI/2, angle_degrees * Math.PI/180.0));
         lightNode.beamWidth   = angle;
         lightNode.cutOffAngle = angle;
         
