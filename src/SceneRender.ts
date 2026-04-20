@@ -280,7 +280,8 @@ export class SceneRender {
     determined to be a model
     */
     private addModel(container: any , anno : manifesto.Annotation ):void{
-               
+            
+        
         // precontract check
         const model:manifesto.Model = (():manifesto.Model => {
             const test:any = thisOrSource( anno.Body );
@@ -396,6 +397,63 @@ export class SceneRender {
         return;
     }
     
+    /*
+    Handles IIIF AmbientLight, DirectionalLight, SpotLight, PointLight
+    */
+    private addSimpleLight( container, anno : manifesto.Annotation):void{
+    
+        const light_placement:Placement = ( () => {
+            const placements =  transformsToPlacements(
+                [   ...TransformsForBody(anno.Body),
+                    TranslationForTarget(anno.Target) ]);
+            if (placements.length > 1){
+                console.warn(`invalid transforms for Camera body`);
+            }
+            return placements[0];
+        })();                   
+        
+        
+        const lightLocation : Translation  =   light_placement.translation;
+        
+        const get_light_intensity = ( (baseLight: manifesto.AmbientLight |
+                                       manifesto.DirectionalLight |
+                                       manifesto.SpotLight |
+                                       manifesto.PointLight ):number => {
+            const valueInstance = baseLight.Intensity;
+            if (valueInstance == null){
+                const msg=`SceneRender.addBasicLight | intensity not spefied, default to 1.0`;
+                console.warn(msg);
+                return 1.0;
+            }
+            return valueInstance.Value;
+        });
+
+        const get_light_color     = ( (baseLight: manifesto.AmbientLight |
+                                       manifesto.DirectionalLight |
+                                       manifesto.SpotLight |
+                                       manifesto.PointLight ):X3DColor => {
+            return X3DColor.from_manifesto_color( baseLight.Color);
+        });
+        
+        
+        const lightNode = ( (basicLight:any) :  X3D.SpotLightProxy |
+                                                X3D.DirectionalLightProxy |
+                                                X3D.PointLightProxy => {
+            if (basicLight.isAmbientLight) {
+                const light = basicLight as manifesto.AmbientLight;
+                const lightNode = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
+                lightNode.ambientIntensity = get_light_intensity(light);
+                const lightColor = get_light_color( light );
+                lightNode.color = new this.manifest_render.x3dLib.SFColor(...lightColor.x3dArgs);
+                return lightNode;
+            }
+            const msg = `SceneRender.addSimpleLight | unsupported type ${basicLight.ResourceType}`;
+            throw new Error(msg);
+                                                
+        })( thisOrSource( anno.Body ) as any );
+
+
+    }
     
     private addSpotLight(  container, anno : manifesto.Annotation):void{
         // precontract check
