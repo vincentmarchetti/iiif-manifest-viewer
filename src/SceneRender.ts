@@ -398,7 +398,6 @@ export class SceneRender {
     
     
     private addSpotLight(  container, anno : manifesto.Annotation):void{
-
         // precontract check
         const spotlight:manifesto.SpotLight = (():manifesto.SpotLight => {
             const test:any = thisOrSource( anno.Body );
@@ -408,10 +407,10 @@ export class SceneRender {
         })();
         
         // lookAt vs SpecificResource check
-        if ((anno.Target as any).isSpecificResource && (spotlight.LookAt != null))
+        if ((anno.Body as any).isSpecificResource && (spotlight.LookAt != null))
         {
             const msg:string = `SceneRender.addSpotLight | case of lookAt wrapped in SpecificResource not implemented`;
-            throw new Error()
+            throw new Error(msg);
         }
                 
         const light_placement:Placement = ( () => {
@@ -433,7 +432,7 @@ export class SceneRender {
             }
             if ((lookAt as any).isPointSelector){
                 const lookAtLocation:Translation = 
-                    Transform.from_point_selector( lookAt as manifesto.PointSelector);                
+                    Transform.from_point_selector( lookAt as manifesto.PointSelector);              
                 const dir = directionFromDisplacement(lightLocation,lookAtLocation);
                 if (dir == null){
                     const msg = `SceneRender.addSpotLight | light and lookAt at same location`;
@@ -443,9 +442,7 @@ export class SceneRender {
             }
             const msg = `SceneRender.addSpotLight | unsupported lookAt resource`;
             throw new Error(msg);
-        })();
-        
-        
+        })(spotlight.LookAt);
 
         const lightNode =  this.createNode("SpotLight") as X3D.SpotLightProxy;
 
@@ -455,7 +452,7 @@ export class SceneRender {
         const lightIntensity:number = (():number => {
             const valueInstance = spotlight.Intensity;
             if (valueInstance == null){
-                const msg=`SceneRender.addSpotLight | intensity not spefied, default to 1.0`;
+                const msg=`SceneRender.addSpotLight | intensity not specified, default to 1.0`;
                 console.warn(msg);
                 return 1.0;
             }
