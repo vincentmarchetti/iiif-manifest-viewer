@@ -335,7 +335,7 @@ export class SceneRender {
         })();
         
         // lookAt vs SpecificResource check
-        if ((anno.Target as any).isSpecificResource && (camera.LookAt != null))
+        if ((anno.Body as any).isSpecificResource && (camera.LookAt != null))
         {
             const msg:string = `SceneRender.addCamera | case of lookAt wrapped in SpecificResource not implemented`;
             throw new Error()
@@ -357,6 +357,7 @@ export class SceneRender {
         const cameraLocation : Translation  =   camera_placement.translation;
             
         const [cameraOrientation, cameraCenter]  = ( (lookAt):[Rotation, Translation] => {
+            console.debug(`addCamera: lookAt: ${lookAt}`);
             if (lookAt == null){
                 return [ camera_placement.rotation,TranslationForTarget(anno.Target)];
             }
@@ -364,7 +365,8 @@ export class SceneRender {
                 const lookAtLocation:Translation = 
                     Transform.from_point_selector( lookAt as manifesto.PointSelector);                
                 const camera_rotation = (():Rotation =>{
-                    const rvn = relativeRotation(cameraLocation, lookAtLocation);
+                    console.debug(`camera_rotation from ${cameraLocation} to ${lookAtLocation}`);
+                    const rvn = relativeRotation(lookAtLocation, cameraLocation );
                     if (rvn == null)
                         throw new Error(`SceneRender.addCamera : lookAt same place as camera`);
                     return rvn as Rotation
@@ -373,7 +375,7 @@ export class SceneRender {
             }
             const msg = `SceneRender.addCamera | unsupported lookAt resource`;
             throw new Error(msg);
-        })();
+        })( camera.LookAt );
         
         
         const cameraNode = (() => {
@@ -392,6 +394,7 @@ export class SceneRender {
         
         cameraNode.centerOfRotation = new this.manifest_render.x3dLib.SFVec3f(...cameraCenter.x3dArgs);
         
+        console.info(`camera fragment \n${cameraNode.toXMLString()}`);
         container.push( cameraNode );
         return;
     }
