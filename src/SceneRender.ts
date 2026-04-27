@@ -361,9 +361,10 @@ export class SceneRender {
             if (lookAt == null){
                 return [ camera_placement.rotation,TranslationForTarget(anno.Target)];
             }
-            if ((lookAt as any).isPointSelector){
+            else {
                 const lookAtLocation:Translation = 
-                    Transform.from_point_selector( lookAt as manifesto.PointSelector);                
+                    this.translation_from_lookat(lookAt as manifesto.JSONLDResource);
+                                   
                 const camera_rotation = (():Rotation =>{
                     console.debug(`camera_rotation from ${cameraLocation} to ${lookAtLocation}`);
                     const rvn = relativeRotation(lookAtLocation, cameraLocation );
@@ -373,8 +374,6 @@ export class SceneRender {
                 })();
                 return [ camera_rotation, lookAtLocation];
             }
-            const msg = `SceneRender.addCamera | unsupported lookAt resource`;
-            throw new Error(msg);
         })( camera.LookAt );
         
         
@@ -496,6 +495,21 @@ export class SceneRender {
         }
         if (nullFlag) return null;
         return retVal;
+    }
+    
+    /*
+    Developer Note: 20260427 intention is that this function will handle these cases
+    1. lookAt is a PointSelector
+    2. lookAt is an annotation in th that also targets this scene
+    3. 2 but wrapped in a SpecificResource whose selector is a PointSelector
+    */
+    private translation_from_lookat( lookAt:manifesto.JSONLDResource) : Translation {
+        const lookAtType:string = lookAt.ResourceType;
+        if (lookAtType == "PointSelector"){
+            return Transform.from_manifesto_transform(lookAt as manifesto.PointSelector) as Translation;
+        }
+        const msg = `SceneRender.translation_from_lookat | unsupport type ${lookAtType}`;
+        throw new Error(msg);
     }
 }
 
