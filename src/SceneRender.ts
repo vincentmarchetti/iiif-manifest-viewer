@@ -508,6 +508,31 @@ export class SceneRender {
         if (lookAtType == "PointSelector"){
             return Transform.from_manifesto_transform(lookAt as manifesto.PointSelector) as Translation;
         }
+        if (lookAtType == "Annotation"){
+            const lookat_anno_id = lookAt.ResourceId;
+            const found_anno : manifesto.Annotation | null = 
+                this.manifest_render.manifest.findAnnotationById( lookat_anno_id );
+                
+            if (found_anno == null){
+                const msg:string = `SceneRender.translation_from_lookat : resource ${lookat_anno_id} not found`;
+                throw new Error(msg);
+            }
+            else{
+                {
+                    const msg:string = `SceneRender.translation_from_lookat : resource ${lookat_anno_id} found`;
+                    console.log(msg);
+                }
+                const lookAtTargetSource = thisOrSource(found_anno.Target);
+                console.debug(`lookAtTargetSource ${lookAtTargetSource.ResourceId}`);
+                if ( lookAtTargetSource.ResourceId != this.scene_properties.ResourceId ){
+                    const msg = "SceneRender.translation_from_lookat | target mismatch: " +
+                                `${lookAtTargetSource.ResourceId} to ${this.scene_properties.ResourceId}`;
+                    throw new Error(msg);
+                }
+               
+                return TranslationForTarget( found_anno.Target);
+            }
+        }
         const msg = `SceneRender.translation_from_lookat | unsupport type ${lookAtType}`;
         throw new Error(msg);
     }
