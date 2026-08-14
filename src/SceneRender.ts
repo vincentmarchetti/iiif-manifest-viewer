@@ -167,7 +167,7 @@ export class SceneRender {
     
     /*
     Developer note: 13 Jan 2026 Functionally this should be put in the
-    constructor, but I have a superstition agains putting a instance constructor
+    constructor, but I have a superstition against putting a instance constructor
     inside an await loop. 
     Clients should call this function asynchrously after constucting the
     SceneRender instance synchronously
@@ -196,10 +196,19 @@ export class SceneRender {
                     this.addAnnotationPage(this.scene_x3d.rootNodes, page);
             });
             
+
             const countLights = Object.getOwnPropertyNames(this.lights).length;
             console.info(`Manifest defined ${countLights} Light resources`);
             this.isHouseLightsOn = ( countLights == 0 );
             console.debug(`isHouseLights set to ${this.isHouseLightsOn}`)
+            
+            const nc = Object.getOwnPropertyNames(this.cameras).length;
+            console.log(`manifest defines ${nc} cameras ${Object.getOwnPropertyNames(this.cameras)}`);
+            if (Object.hasOwn(this.cameras,"default"))
+                console.log(`default camera ${this.cameras["default"].ResourceId}`);
+            else
+                console.log(`no default camera defined in manifest`);
+
             
             await this.manifest_render.browser.replaceWorld(this.scene_x3d); 
         }
@@ -439,8 +448,9 @@ export class SceneRender {
         have hidden behavior, then the "default" [property is initialiized with this camera]
         */
         this.cameras[camera.ResourceId] = cameraNode;
+        console.debug(`annotation behavior: ${anno.Behavior}`);
         if (!Object.hasOwn(this.cameras , "default") && 
-            !camera.Behavior.includes("hidden")){
+            !anno.Behavior.includes("hidden")){
             this.cameras["default"] = cameraNode;
         }
         
