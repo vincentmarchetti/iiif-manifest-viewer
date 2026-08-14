@@ -109,7 +109,17 @@ export class SceneRender {
     // a default color for background in X3D color convention, 0 is black, 1.0 is white 
     private readonly defaultBackground : [number, number, number]= [0.925,0.925,0.925];    
     
+    /**
+    The cameras object will be populated by values of the ViewPoint nodes 
+    The name  of each property will be the IIIF id of the underlying IIIF Camera resource
+    If no non-hidden camera is defined for the Scene in the Manifest, then a property
+    with name "default" and value a either the first non-hidden camera defined in the manifest 
+    or an anonymous (no IIIF resource or id) Viewpoint 
     
+    Reminder: it is possible that the same Camera resource will be present in the
+    cameras Object under the "default" name and an id-valued name,
+    **/
+    private cameras:Object = new Object();
     
     public constructor( scene : manifesto.Scene, manifest_render:IManifestRender){        
         this.manifest_render = manifest_render;
@@ -393,10 +403,25 @@ export class SceneRender {
         
         cameraNode.centerOfRotation = new this.manifest_render.x3dLib.SFVec3f(...cameraCenter.x3dArgs);
         
+        
+        /* update the Scene.cameras object
+        All cameras created from manifest are entered with their id as name
+        
+        If cameras has no "default" Viepoint yet, and the Camera resource does not
+        have hidden behavior, then the "default" [property is initialiized with this camera]
+        */
+        this.cameras[camera.ResourceId] = cameraNode;
+        if (!Object.hasOwn(this.cameras , "default") && 
+            !camera.Behavior.includes("hidden")){
+            this.cameras["default"] = cameraNode;
+        }
+        
         console.info(`camera fragment \n${cameraNode.toXMLString()}`);
         container.push( cameraNode );
         return;
     }
+    
+    
     
     
     private addSpotLight(  container, anno : manifesto.Annotation):void{
