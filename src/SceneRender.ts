@@ -110,16 +110,20 @@ export class SceneRender {
     private readonly defaultBackground : [number, number, number]= [0.925,0.925,0.925];    
     
     /**
-    The cameras object will be populated by values of the ViewPoint nodes 
+    The viewpoints object will be populated by values of the ViewPoint nodes 
     The name  of each property will be the IIIF id of the underlying IIIF Camera resource
-    If no non-hidden camera is defined for the Scene in the Manifest, then a property
-    with name "default" and value a either the first non-hidden camera defined in the manifest 
-    or an anonymous (no IIIF resource or id) Viewpoint 
     
-    Reminder: it is possible that the same Camera resource will be present in the
-    cameras Object under the "default" name and an id-valued name,
+    
+    Developer Note 2026 08 15 : I don't know if Typescript has a way of representing
+    that all the properties of an object have a known type, but if Typescript does,
+    then viewpoints has all properties of type X3D.ViewpointProxy
     **/
-    private cameras:Object = new Object();
+    private viewpoints:Object = new Object();
+    /**
+    If no non-hidden camera is defined for the Scene in the Manifest, either the first non-hidden camera defined in the manifest 
+    or an anonymous (no IIIF resource or id) Viewpoint 
+    **/
+    private defaultViewpoint: X3D.ViewpointProxy | null = null;
     
     public constructor( scene : manifesto.Scene, manifest_render:IManifestRender){        
         this.manifest_render = manifest_render;
@@ -189,10 +193,10 @@ export class SceneRender {
             });
             
             
-            const nc = Object.getOwnPropertyNames(this.cameras).length;
-            console.log(`manifest defines ${nc} cameras ${Object.getOwnPropertyNames(this.cameras)}`);
-            if (Object.hasOwn(this.cameras,"default"))
-                console.log(`default camera ${this.cameras["default"].ResourceId}`);
+            const nc = Object.getOwnPropertyNames(this.viewpoints).length;
+            console.log(`manifest defines ${nc} viewpoints ${Object.getOwnPropertyNames(this.viewpoints)}`);
+            if (this.defaultViewpoint != null)
+                console.log(`default camera ${this.defaultViewpoint}`);
             else
                 console.log(`no default camera defined in manifest`);
             
@@ -412,17 +416,17 @@ export class SceneRender {
         cameraNode.centerOfRotation = new this.manifest_render.x3dLib.SFVec3f(...cameraCenter.x3dArgs);
         
         
-        /* update the Scene.cameras object
+        /* update the Scene.viewpoints object
         All cameras created from manifest are entered with their id as name
         
         If cameras has no "default" Viepoint yet, and the Camera resource does not
         have hidden behavior, then the "default" [property is initialiized with this camera]
         */
-        this.cameras[camera.ResourceId] = cameraNode;
-        console.debug(`annotation behavior: ${anno.Behavior}`);
-        if (!Object.hasOwn(this.cameras , "default") && 
+        this.viewpoints[camera.ResourceId] = cameraNode;
+        
+        if ( this.defaultViewpoint == null && 
             !anno.Behavior.includes("hidden")){
-            this.cameras["default"] = cameraNode;
+            this.defaultViewpoint = cameraNode;
         }
         
         console.info(`camera fragment \n${cameraNode.toXMLString()}`);
