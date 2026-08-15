@@ -197,15 +197,40 @@ export class SceneRender {
             console.log(`manifest defines ${nc} viewpoints ${Object.getOwnPropertyNames(this.viewpoints)}`);
             if (this.defaultViewpoint != null)
                 console.log(`default camera ${this.defaultViewpoint}`);
-            else
-                console.log(`no default camera defined in manifest`);
+            else {
+                console.debug(`creating defaultViewpoint`);
+                this.defaultViewpoint = this.makeDefaultViewpoint();
+                this.scene_x3d.rootNodes.push( this.defaultViewpoint );
+            }
+                
             
             await this.manifest_render.browser.replaceWorld(this.scene_x3d); 
+            console.debug(`binding defaultViewpoint`);            
+            this.defaultViewpoint.set_bind = true;
         }
         //await render_stub_content(this.browser);
         
         
         return this as SceneHooks
+    }
+    
+    /**
+    returns a Viewpoint X3D node at the default position (0,0,10)
+    and pointed toward the origin
+    
+    This function does nothing else beyond creating the node;
+    it is not added to any containerr, the scene, any SceneRender members;
+    and the Viewport is not bound to it
+    **/
+    private makeDefaultViewpoint(): X3D.ViewpointProxy {
+        const retVal : X3D.ViewpointProxy = 
+            this.createNode("Viewpoint") as X3D.ViewpointProxy;
+        retVal.fieldOfView = Math.PI/4; // in radians
+        
+        retVal.orientation = new this.manifest_render.x3dLib.SFRotation(0,0,1,0);        
+        retVal.position = new this.manifest_render.x3dLib.SFVec3f(0,0,+10);        
+        retVal.centerOfRotation = new this.manifest_render.x3dLib.SFVec3f(0,0,0);
+        return retVal;
     }
     
     private addNavigationInfo(container):void {
