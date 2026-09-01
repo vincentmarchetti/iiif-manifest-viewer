@@ -458,7 +458,7 @@ export class SceneRender {
                 console.warn(msg);
                 return 1.0;
             }
-            return valueInstance.Value;
+            return valueInstance.QuantityValue;
         })();   
         lightNode.intensity = lightIntensity;
         
