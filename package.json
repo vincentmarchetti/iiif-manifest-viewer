@@ -4,9 +4,9 @@
   "description": "prototype of a IIIF 3D manifest viewer using the X-ITE X3D viewer",
   "author": "Vince Marchetti <vmarchetti@kshell.com>",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "echo \"Compiling this package to .js is disabled\""
   },
   "devDependencies": {
     "buffer": "^6.0.3",
