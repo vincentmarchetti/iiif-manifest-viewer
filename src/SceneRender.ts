@@ -261,8 +261,8 @@ export class SceneRender {
             if ((bodySource as any).isCamera )
                 return this.addCamera(container, anno);
                 
-            if ((bodySource as any).isSpotLight )
-                return this.addSpotLight(container, anno);
+            if ((bodySource as any).isLight )
+                return this.addLight(container, anno);
                 
             console.warn(`unsupported body type ${body.ResourceType}`);
             return;
@@ -398,15 +398,30 @@ export class SceneRender {
         return;
     }
     
-    
-    private addSpotLight(  container, anno : manifesto.Annotation):void{
-        // precontract check
-        const spotlight:manifesto.SpotLight = (():manifesto.SpotLight => {
-            const test:any = thisOrSource( anno.Body );
-            if (test == null || ! test.isSpotLight )
-                throw new Error(`SceneRender.addSpotLight: precontract violation: not a spotlight`);
-            return test as manifesto.SpotLight;
+    private addLight(  container, anno : manifesto.Annotation):void {
+        const light = (():manifesto.Light => {
+            return thisOrSource( anno.Body ) as manifesto.Light;
         })();
+        
+        if (light.isAmbientLight ||
+            light.isDirectionalLight ||
+            light.isSpotLight )
+                return this.addX3Dv3Light(  container, anno );
+                
+        else{
+            console.warn(`unsupported light type ${light.ResourceType}`);
+            return null;
+        }
+    }
+    
+    private addX3Dv3Light(  container, anno : manifesto.Annotation):void{
+        
+    
+        const light = (():manifesto.Light => {
+            return thisOrSource( anno.Body ) as manifesto.Light;
+        })();
+        console.info(`create  X3Dv3Light for ${light.ResourceType}`);
+        return null
         
         // lookAt vs SpecificResource check
         if ((anno.Body as any).isSpecificResource && (spotlight.LookAt != null))
