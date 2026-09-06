@@ -421,10 +421,10 @@ export class SceneRender {
             return thisOrSource( anno.Body ) as manifesto.Light;
         })();
         console.info(`create  X3Dv3Light for ${light.ResourceType}`);
-        return null
+        
         
         // lookAt vs SpecificResource check
-        if ((anno.Body as any).isSpecificResource && (spotlight.LookAt != null))
+        if ((anno.Body as any).isSpecificResource && (light.LookAt != null))
         {
             const msg:string = `SceneRender.addSpotLight | case of lookAt wrapped in SpecificResource not implemented`;
             throw new Error(msg);
@@ -435,11 +435,15 @@ export class SceneRender {
                 [   ...TransformsForBody(anno.Body),
                     TranslationForTarget(anno.Target) ]);
             if (placements.length > 1){
-                console.warn(`invalid transforms for Camera body`);
+                console.warn(`invalid transforms for Light body`);
             }
             return placements[0];
         })();                   
         
+        // nodeParameters will contain X3D specific parameters for the light
+        const lightParameters = new Object();
+        
+        // all X3Dv3 lights have color, intensity, and ambientIntensity
         
         const lightLocation : Translation  =   light_placement.translation;
             
@@ -447,27 +451,29 @@ export class SceneRender {
             if (lookAt == null){
                 return directionFromOrientation(light_placement.rotation);
             }
-            if ((lookAt as any).isPointSelector){
-                const lookAtLocation:Translation = 
-                    Transform.from_point_selector( lookAt as manifesto.PointSelector);              
+            else{
+                const lookAtLocation = this.translation_from_lookat(lookAt as manifesto.JSONLDResource);
                 const dir = directionFromDisplacement(lightLocation,lookAtLocation);
                 if (dir == null){
-                    const msg = `SceneRender.addSpotLight | light and lookAt at same location`;
+                    const msg = `SceneRender.addX3Dv3Light | light and lookAt at same location`;
                     throw new Error(msg);
                 }
                 return dir as Translation;
             }
-            const msg = `SceneRender.addSpotLight | unsupported lookAt resource`;
+            const msg = `SceneRender.addX3Dv3Light | unsupported lookAt resource ${lookAt.ResourceType}`;
             throw new Error(msg);
-        })(spotlight.LookAt);
+        })(light.LookAt);
 
-        const lightNode =  this.createNode("SpotLight") as X3D.SpotLightProxy;
+        //const lightNode =  this.createNode("SpotLight") as X3D.SpotLightProxy;
 
-        const lightColor:X3DColor = X3DColor.from_manifesto_color( spotlight.Color);
-        lightNode.color =   new this.manifest_render.x3dLib.SFColor(...lightColor.x3dArgs);  
+        const lightColor = (()=> {
+            const lc = X3DColor.from_manifesto_color( light.Color);
+            console.debug(`lightColor debugging: values ${lc.values}`);
+            return new this.manifest_render.x3dLib.SFColor(...lc.x3dArgs);
+        })();
         
         const lightIntensity:number = (():number => {
-            const valueInstance = spotlight.Intensity;
+            const valueInstance = light.Intensity;
             if (valueInstance == null){
                 const msg=`SceneRender.addSpotLight | intensity not specified, default to 1.0`;
                 console.warn(msg);
@@ -475,16 +481,38 @@ export class SceneRender {
             }
             return valueInstance.QuantityValue;
         })();   
-        lightNode.intensity = lightIntensity;
         
-        const angle_degrees = spotlight.Angle ?? 15.0;
+        
+        const angle_degrees = light.Angle ?? 15.0;
         const angle = Math.max(0.0, Math.min( Math.PI/2, angle_degrees * Math.PI/180.0));
-        lightNode.beamWidth   = angle;
-        lightNode.cutOffAngle = angle;
+        //lightNode.beamWidth   = angle;
+        //lightNode.cutOffAngle = angle;
         
-        lightNode.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
         
-        lightNode.location = new this.manifest_render.x3dLib.SFVec3f(...lightLocation.x3dArgs);
+        const lightNode = ( ()=> {
+            if (light.isAmbientLight){
+                var rv = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
+                rv.global=true;
+                rv.ambientIntensity = lightIntensity;
+                rv.intensity = 0.0;
+                rv.color = lightColor;
+                return rv;
+            }
+            if (light.isDirectionalLight){
+                var rv = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
+                rv.global=true;
+                rv.ambientIntensity = 0.0;
+                rv.intensity = lightIntensity;
+                rv.color = lightColor;
+                return rv;
+            }
+            console.warn(`unsupported light ${light.ResourceType}`);
+        })();
+        
+        
+        //lightNode.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
+        
+        //lightNode.location = new this.manifest_render.x3dLib.SFVec3f(...lightLocation.x3dArgs);
         
         console.info(`light fragment \n${lightNode.toXMLString()}`);
         container.push( lightNode );
