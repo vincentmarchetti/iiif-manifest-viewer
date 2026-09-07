@@ -484,10 +484,7 @@ export class SceneRender {
         
         
         const angle_degrees = light.Angle ?? 15.0;
-        const angle = Math.max(0.0, Math.min( Math.PI/2, angle_degrees * Math.PI/180.0));
-        //lightNode.beamWidth   = angle;
-        //lightNode.cutOffAngle = angle;
-        
+        const angle = Math.max(0.0, Math.min( Math.PI/2, angle_degrees * Math.PI/180.0));        
         
         const lightNode = ( ()=> {
             if (light.isAmbientLight){
@@ -504,15 +501,23 @@ export class SceneRender {
                 rv.ambientIntensity = 0.0;
                 rv.intensity = lightIntensity;
                 rv.color = lightColor;
+                rv.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
                 return rv;
             }
-            console.warn(`unsupported light ${light.ResourceType}`);
+            if (light.isSpotLight){
+                var rv = this.createNode("SpotLight") as X3D.SpotLightProxy;
+                rv.global=true;
+                rv.ambientIntensity = 0.0;
+                rv.intensity = lightIntensity;
+                rv.color = lightColor;
+                rv.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
+                rv.location  = new this.manifest_render.x3dLib.SFVec3f(...lightLocation.x3dArgs);
+                rv.beamWidth   = angle;
+                rv.cutOffAngle = angle;
+                return rv;
+             }
+            throw new Error(`unsupported light ${light.ResourceType}`);
         })();
-        
-        
-        //lightNode.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
-        
-        //lightNode.location = new this.manifest_render.x3dLib.SFVec3f(...lightLocation.x3dArgs);
         
         console.info(`light fragment \n${lightNode.toXMLString()}`);
         container.push( lightNode );
