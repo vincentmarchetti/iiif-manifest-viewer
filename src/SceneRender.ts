@@ -220,23 +220,37 @@ export class SceneRender {
     
     private addDefaultLighting(container):void {
         const switchNode = this.createNode("Switch") as X3D.SwitchProxy;
-        const groupNode  = this.createNode("Group")  as X3D.GroupProxy;
-        const directionData : AxesValues[] 
-            =   [ [0.0 , -0.81649658, -0.57735027] ,
-                [-0.5, -0.81649658,  0.28867513],
-                [+0.5, -0.81649658,  0.28867513]];
-        directionData.forEach( (vec:AxesValues) => {
-            const light = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
-            light.direction = new this.manifest_render.x3dLib.SFVec3f(...vec);
-            light.global =    true;
-            light.intensity = 1.0 ;
-            light.ambientIntensity = 0.5;
-            groupNode.children.push(light);        
-        });
+        const groupNode  = this.buildAmbientLightArray(new X3DColor([1,1,1]), 1.0);
+        console.info(`default light group \n${groupNode.toXMLString()}`);
         switchNode.children.push(groupNode);
         switchNode.whichChoice = 0;
         this.defaultLightsSwitch = switchNode;
         container.push(switchNode);
+    }
+    
+    // Returns an X3D Grou node containing a set of directional lights
+    // each with specified color and intensity, with a range of directions
+    // intended to emulate ambient lighthing
+    private buildAmbientLightArray(color:X3DColor, intensity:number)  {
+        const groupNode  = this.createNode("Group")  as X3D.ConcreteNodeTypes["Group"];
+        const directionData : AxesValues[] =
+            [
+                [0.0 , -0.81649658, -0.57735027],
+                [-0.5, -0.81649658,  0.28867513],
+                [+0.5, -0.81649658,  0.28867513],
+                [ 0.0,  1.0,         0.0]
+            ];
+        directionData.forEach( (vec:AxesValues) => {
+            const light = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
+            light.direction = new this.manifest_render.x3dLib.SFVec3f(...vec);
+            light.global =    true;
+            light.intensity = intensity ;
+            light.ambientIntensity = 0.0;
+            light.color = new this.manifest_render.x3dLib.SFColor(...color.x3dArgs);
+            
+            groupNode.children.push(light);        
+        });    
+        return groupNode;
     }
     
     private addAnnotation(container, anno:manifesto.Annotation):void {
