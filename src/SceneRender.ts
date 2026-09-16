@@ -129,6 +129,14 @@ export class SceneRender {
         console.debug(`SceneRender.createNode ${tag}`);
         return this.scene_x3d.createNode(tag);
     }
+
+    /**
+    The lights object will be populated by values of the X3D *Light nodes 
+    The name  of each property will be the IIIF id of the underlying IIIF Light resource
+    **/
+    private lights:Object = new Object();
+
+
     
     private navigationInfo?      : X3D.ConcreteNodeTypes["NavigationInfo"];
     private defaultLightsSwitch? : X3D.ConcreteNodeTypes["Switch"];
@@ -178,9 +186,15 @@ export class SceneRender {
                     this.addAnnotationPage(this.scene_x3d.rootNodes, page);
             });
             
+            const countLights = Object.getOwnPropertyNames(this.lights).length;
+            console.info(`Manifest defined ${countLights} Light resources`);
+            this.isHouseLightsOn = ( countLights == 0 );
+            console.debug(`isHouseLights set to ${this.isHouseLightsOn}`)
+            
             await this.manifest_render.browser.replaceWorld(this.scene_x3d); 
         }
         //await render_stub_content(this.browser);
+        
         
         
         return this as SceneHooks
@@ -533,6 +547,9 @@ export class SceneRender {
              }
             throw new Error(`unsupported light ${light.ResourceType}`);
         })();
+        
+        // add the light (or Group, for Ambient case) to the lights object
+        this.lights[light.ResourceId] = lightNode;
         
         console.info(`light fragment \n${lightNode.toXMLString()}`);
         container.push( lightNode );
