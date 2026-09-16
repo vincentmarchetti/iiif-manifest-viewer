@@ -480,10 +480,12 @@ export class SceneRender {
 
         //const lightNode =  this.createNode("SpotLight") as X3D.SpotLightProxy;
 
-        const lightColor = (()=> {
-            const lc = X3DColor.from_manifesto_color( light.Color);
-            console.debug(`lightColor debugging: values ${lc.values}`);
-            return new this.manifest_render.x3dLib.SFColor(...lc.x3dArgs);
+        const lightColor = (():X3DColor => {
+            // Developer Note: It is part of the manifesto.Light implementation
+            // that a default color of white is returned if no value
+            // is defined in the manifest.
+            const lc:X3DColor = X3DColor.from_manifesto_color( light.Color);
+            return lc;
         })();
         
         const lightIntensity:number = (():number => {
@@ -502,11 +504,10 @@ export class SceneRender {
         
         const lightNode = ( ()=> {
             if (light.isAmbientLight){
-                var rv = this.createNode("DirectionalLight") as X3D.DirectionalLightProxy;
-                rv.global=true;
-                rv.ambientIntensity = lightIntensity;
-                rv.intensity = 0.0;
-                rv.color = lightColor;
+                var rv = this.buildAmbientLightArray(
+                    lightColor,
+                    lightIntensity
+                );            
                 return rv;
             }
             if (light.isDirectionalLight){
@@ -514,7 +515,7 @@ export class SceneRender {
                 rv.global=true;
                 rv.ambientIntensity = 0.0;
                 rv.intensity = lightIntensity;
-                rv.color = lightColor;
+                rv.color = new this.manifest_render.x3dLib.SFColor(...lightColor.x3dArgs);
                 rv.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
                 return rv;
             }
@@ -523,7 +524,7 @@ export class SceneRender {
                 rv.global=true;
                 rv.ambientIntensity = 0.0;
                 rv.intensity = lightIntensity;
-                rv.color = lightColor;
+                rv.color = new this.manifest_render.x3dLib.SFColor(...lightColor.x3dArgs);
                 rv.direction = new this.manifest_render.x3dLib.SFVec3f(...lightDirection.x3dArgs);
                 rv.location  = new this.manifest_render.x3dLib.SFVec3f(...lightLocation.x3dArgs);
                 rv.beamWidth   = angle;
