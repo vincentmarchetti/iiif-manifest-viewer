@@ -474,7 +474,7 @@ export class SceneRender {
         If cameras has no "default" Viepoint yet, and the Camera resource does not
         have hidden behavior, then the "default" [property is initialiized with this camera]
         */
-        this.viewpoints[camera.ResourceId] = cameraNode;
+        this.viewpoints[anno.ResourceId] = cameraNode;
         
         if ( this.defaultViewpoint == null && 
             !anno.Behavior.includes("hidden")){
@@ -610,7 +610,7 @@ export class SceneRender {
         })();
         
         // add the light (or Group, for Ambient case) to the lights object
-        this.lights[light.ResourceId] = lightNode;
+        this.lights[anno.ResourceId] = lightNode;
         
         console.info(`light fragment \n${lightNode.toXMLString()}`);
         container.push( lightNode );
