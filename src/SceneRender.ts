@@ -10,6 +10,7 @@ import {Transform,
         directionFromDisplacement } from "@kshell/iiif-x3d-transforms";
         
 import {Vector3} from "threejs-math";
+import {Actors} from "./Actors.ts";
 
 import type X3D from "x_ite";
 
@@ -167,7 +168,10 @@ export class SceneRender {
             this.defaultLightsSwitch.whichChoice = (value)?0:-1;
     }
     
-    
+    // actors is an object whose property names are the IIIF ResourceId values
+    // of an Annotation and the property values are strings such as "show", "hide",
+    // "enable", "disable", ... as listed in the 4.0 spec at 
+    private actors = new Object();
     
     /*
     Developer note: 13 Jan 2026 Functionally this should be put in the
@@ -475,6 +479,8 @@ export class SceneRender {
         have hidden behavior, then the "default" [property is initialiized with this camera]
         */
         this.viewpoints[anno.ResourceId] = cameraNode;
+        
+        actors[anno.ResourceId] = Actors.Viewpoint(anno.ResourceId , this);
         
         if ( this.defaultViewpoint == null && 
             !anno.Behavior.includes("hidden")){
