@@ -224,6 +224,8 @@ export class SceneRender {
             await this.manifest_render.browser.replaceWorld(this.scene_x3d); 
             console.debug(`binding defaultViewpoint`);            
             this.defaultViewpoint.set_bind = true;
+            
+            console.info(`Scene \n${this.scene_x3d.toXMLString()}`);
         }
         
         
